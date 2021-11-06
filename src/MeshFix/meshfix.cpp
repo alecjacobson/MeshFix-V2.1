@@ -1,4 +1,5 @@
 #include "tmesh.h"
+#include "meshfix.h"
 #include <stdlib.h>
 #include <string.h>
 #include <time.h>
@@ -127,6 +128,35 @@ char *createFilename(const char *iname, const char *subext, char *oname, const c
 	return oname;
 }
 
+bool meshfix(const bool join_multiple_components, Basic_TMesh & tin)
+{
+  if (join_multiple_components)
+  {
+    TMesh::info("\nJoining input components ...\n");
+    TMesh::begin_progress();
+    while (joinClosestComponents(&tin)) TMesh::report_progress("Num. components: %d       ", tin.shells());
+    TMesh::end_progress();
+    tin.deselectTriangles();
+  }
+
+  // Keep only the largest component (i.e. with most triangles)
+  int sc = tin.removeSmallestComponents();
+  if (sc) TMesh::warning("Removed %d small components\n",sc);
+
+  // Fill holes
+  if (tin.boundaries())
+  {
+    TMesh::warning("Patching holes\n");
+    tin.fillSmallBoundaries(0, true);
+  }
+
+  // Run geometry correction
+  if (!tin.boundaries()) TMesh::warning("Fixing degeneracies and intersections...\n");
+  if (tin.boundaries() || !tin.meshclean()) { TMesh::warning("MeshFix could not fix everything.\n", sc); return false;}
+  return true;
+}
+
+#ifndef MESHFIX_LIBRARY
 
 int main(int argc, char *argv[])
 {
@@ -175,30 +205,7 @@ int main(int argc, char *argv[])
  // The loader automatically reconstructs a manifold triangle connectivity
  if (tin.load(infilename) != 0) TMesh::error("Can't open file.\n");
 
- if (join_multiple_components)
- {
-	 TMesh::info("\nJoining input components ...\n");
-	 TMesh::begin_progress();
-	 while (joinClosestComponents(&tin)) TMesh::report_progress("Num. components: %d       ", tin.shells());
-	 TMesh::end_progress();
-	 tin.deselectTriangles();
- }
-
-	   // Keep only the largest component (i.e. with most triangles)
-	   int sc = tin.removeSmallestComponents();
-	   if (sc) TMesh::warning("Removed %d small components\n",sc);
-
-	   // Fill holes
-	   if (tin.boundaries())
-	   {
-		TMesh::warning("Patching holes\n");
-		tin.fillSmallBoundaries(0, true);
-	   }
-
-	   // Run geometry correction
-	   if (!tin.boundaries()) TMesh::warning("Fixing degeneracies and intersections...\n");
-	   if (tin.boundaries() || !tin.meshclean()) TMesh::warning("MeshFix could not fix everything.\n", sc);
-
+ meshfix(join_multiple_components,tin);
 
  TMesh::info("Saving output mesh ...\n");
  tin.save(outfilename);
@@ -207,3 +214,4 @@ int main(int argc, char *argv[])
 
  return 0;
 }
+#endif

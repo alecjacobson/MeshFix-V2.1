@@ -5,6 +5,8 @@
 cmake_minimum_required(VERSION 3.0)
 project(MeshFix)
 
+option(MESHFIX_LIBRARY "Build as library" OFF)
+
 ################################################################################
 
 if(NOT CMAKE_BUILD_TYPE)
@@ -38,9 +40,15 @@ set(SOURCES
 
 ################################################################################
 
-add_executable(MeshFix ${SOURCES})
+if(MESHFIX_LIBRARY)
+  add_library(MeshFix ${SOURCES})
+  target_compile_definitions(MeshFix PUBLIC MESHFIX_LIBRARY)
+else()
+  add_executable(MeshFix ${SOURCES})
+endif()
 
 target_include_directories(MeshFix PUBLIC
+                include
 		include/TMesh
 		include/Kernel
 )

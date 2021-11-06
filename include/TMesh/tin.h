@@ -167,8 +167,8 @@ class Basic_TMesh
 		//! that can be represented in an ASCII file.
 		void coordBackApproximation();
 
-	protected:
 		void closeLoadingSession(FILE *, int, ExtVertex **, bool);
+	protected:
 		bool pinch(Edge *e, bool wcv);
 		//! If the 'e' is internal, creates a copy of the edge and associates e->t2
 		//! to this copy. After this operation, 'e' and its copy are boundary edges
